@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="Stylesheet" type="text/css" href="../style.css">
+<link rel="alternate" type="application/rss+xml" title="RSS" href="../rss.xml">
+<title>specification</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<a href="../index.html">Index</a>
+<hr>
+<div class="content">
+
+<div id="Specification"><h1 id="Specification" class="header"><a href="#Specification">Specification</a></h1></div>
+
+<p>
+The following is a draft specification for the <span id="Specification-vimwiki"></span><strong id="vimwiki">vimwiki</strong> markup language. It is
+provided as a guideline for consistent parsing and rendering of vimwiki
+content.
+</p>
+
+<p>
+Similar to the approach taken with <a href="https://www.commonmark.org/">commonmark</a>,
+this document attempts to specify <span id="Specification-vimwiki"></span><strong id="vimwiki">vimwiki</strong> syntax unambiguously. It contains
+examples of the language and describes the specifics of the language in a way
+that tooling can more easily define parsers and generators.
+</p>
+
+<div id="Specification-Version"><h2 id="Version" class="header"><a href="#Specification-Version">Version</a></h2></div>
+
+<p>
+Current: <span id="Specification-Version-0.1.0"></span><strong id="0.1.0">0.1.0</strong>
+</p>
+
+<p>
+This specification is versioned in order to provide a stable point of reference
+for external tools. <a href="https://semver.org/">Semantic versioning</a> is used to keep
+track of the current state of the specification. <span id="Specification-Version-MAJOR.MINOR.PATCH"></span><strong id="MAJOR.MINOR.PATCH">MAJOR.MINOR.PATCH</strong> is the
+format.
+</p>
+
+<p>
+While the specification remains with a zero major version, the contents of this
+specification can change without any requirement to maintain compatibility.
+Once a non-zero major version is released, new vimwiki language elements may
+only be added in minor releases and any breaking change must be reflected by a
+major release. Tweaks in language that do not add, alter, or remove elements of
+vimwiki (such as typos, clarifications, etc) may be made with patch releases.
+</p>
+
+<p>
+The specification will continue to remain in a development mode (zero major
+mode) until the language has become relatively stable.
+</p>
+
+<div id="Specification-Language"><h2 id="Language" class="header"><a href="#Specification-Language">Language</a></h2></div>
+
+<p>
+The following will describe the individual elements of the vimwiki language.
+It will cover each element's purpose and a clear description of the syntax.
+</p>
+
+<p>
+For details on parsing prescedence, see the <a href="specification.html#Specification-Parser Details">companion section</a>.
+</p>
+
+<div id="Specification-Language-Primitives"><h3 id="Primitives" class="header"><a href="#Specification-Language-Primitives">Primitives</a></h3></div>
+
+<p>
+In order to define the vimwiki language, we first need to present several
+definitions for primitive building blocks used to shape up higher-level
+elements. Relevant definitions are borrowed from
+<a href="https://spec.commonmark.org/0.29/#characters-and-lines">commonmark characters and lines</a>.
+</p>
+
+<p>
+A <span id="Specification-Language-Primitives-character"></span><strong id="character">character</strong> in vimwiki is a valid UTF-8 code point. For the purposes of
+this document, we further restrict a character to not include any
+<a href="https://en.wikipedia.org/wiki/Control_character">control character</a> as those will be referenced separately.
+</p>
+
+<p>
+An <span id="Specification-Language-Primitives-alphanumeric character"></span><strong id="alphanumeric character">alphanumeric character</strong> is a <a href="specification.html#character">character</a> that can only be in
+the range of a-z, A-Z, or 0-9 where these represent alphabet characters
+(abcdef...z) of lower and upper case as well as digits (0, 1, 2, ..., 9).
+</p>
+
+<p>
+A <span id="Specification-Language-Primitives-line"></span><strong id="line">line</strong> is a sequence of zero or more <a href="specification.html#Specification-Language-Primitives-character">characters</a> other than a
+newline (<code>U+000A</code> aka <code>\n</code>) or carriage return (<code>U+000D</code> aka <code>\r</code>), followed by
+a <a href="specification.html#Specification-Language-Primitives-line ending">line ending</a> or by the end of a file.
+</p>
+
+<p>
+A <span id="Specification-Language-Primitives-line ending"></span><strong id="line ending">line ending</strong> is a newline (<code>U+000A</code> aka <code>\n</code>), a carriage return (<code>U+000D</code>
+aka <code>\r</code>) not followed by a newline, or a carriage return and a following
+newline (<code>\r\n</code>).
+</p>
+
+<p>
+A line with no <a href="specification.html#character">characters</a>, or a line containing only spaces (<code>U+0020</code>) or tabs
+(<code>U+0009</code>), is called a <span id="Specification-Language-Primitives-blank line"></span><strong id="blank line">blank line</strong>.
+</p>
+
+<p>
+A <span id="Specification-Language-Primitives-whitespace character"></span><strong id="whitespace character">whitespace character</strong> is a space (<code>U+0020</code>) or tab (<code>U+0009</code>).
+</p>
+
+<p>
+<span id="Specification-Language-Primitives-All characters until end of line"></span><strong id="All characters until end of line">All characters until end of line</strong> is any sequence of <a href="specification.html#character">characters</a>
+leading up to but not including a <a href="specification.html#line ending">line ending</a>.
+</p>
+
+<p>
+A <span id="Specification-Language-Primitives-user-defined content"></span><strong id="user-defined content">user-defined content</strong> is an arbitrary series of <a href="specification.html#character">characters</a> or a function
+that yields those characters. Its purpose is to enable users of vimwiki to
+interject their own configuration into aspects of the vimwiki language.
+</p>
+
+<p>
+<span id="Specification-Language-Primitives-User-definable"></span><strong id="User-definable">User-definable</strong> represents any language definition that can be altered to
+instead be represented by one or more <a href="specification.html#user-defined content">user-defined content</a>.
+</p>
+
+<div id="Specification-Language-Block Elements"><h3 id="Block Elements" class="header"><a href="#Specification-Language-Block Elements">Block Elements</a></h3></div>
+
+<p>
+The vimwiki language has a variety of syntax that represent elements within
+a page. In this section, we discuss block-level elements, which are vimwiki
+syntax that are standalone and can comprise one or more entire lines within
+a file.
+</p>
+
+<div id="Specification-Language-Block Elements-Blockquote"><h4 id="Blockquote" class="header"><a href="#Specification-Language-Block Elements-Blockquote">Blockquote</a></h4></div>
+
+<p>
+A blockquote has two different forms available: indented text or text prefixed
+with a right angle bracket or chevron <code>&gt;</code>. Its purpose is to convey an extended
+quotation.
+</p>
+
+<p>
+<span id="Specification-Language-Block Elements-Blockquote-Form 1"></span><strong id="Form 1">Form 1</strong>:
+</p>
+
+<pre vimwiki>
+    This is a blockquote
+    that exists on more than one line
+</pre>
+
+<p>
+<span id="Specification-Language-Block Elements-Blockquote-Form 2"></span><strong id="Form 2">Form 2</strong>:
+</p>
+
+<pre vimwiki>
+&gt; This is a blockquote
+&gt; that exists on more than one line
+</pre>
+
+<div id="Specification-Language-Block Elements-Blockquote-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-Blockquote-Syntax">Syntax</a></h5></div>
+
+<p>
+<span id="Specification-Language-Block Elements-Blockquote-Syntax-Form 1"></span><strong id="Form 1">Form 1</strong>:
+</p>
+
+<p>
+A blockquote is made of <span id="Specification-Language-Block Elements-Blockquote-Syntax-one"></span><strong id="one">one</strong> or more <a href="specification.html#indented blockquote line">indented blockquote lines</a>
+</p>
+
+<p>
+An <span id="Specification-Language-Block Elements-Blockquote-Syntax-indented blockquote line"></span><strong id="indented blockquote line">indented blockquote line</strong> is made of the following:
+</p>
+<ol>
+<li>
+Four or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+All <a href="specification.html#character">characters</a> up until a <a href="specification.html#line ending">line ending</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+<span id="Specification-Language-Block Elements-Blockquote-Syntax-Form 2"></span><strong id="Form 2">Form 2</strong>:
+</p>
+
+<p>
+A blockquote is made of <span id="Specification-Language-Block Elements-Blockquote-Syntax-one"></span><strong id="one">one</strong> or more <a href="specification.html#chevron blockquote line">chevron blockquote lines</a>, which may be
+separated by zero or more <a href="specification.html#blank line">blank lines</a>
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-Blockquote-Syntax-chevron blockquote line"></span><strong id="chevron blockquote line">chevron blockquote line</strong> is made of the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+A prefix right angle bracket or chevron (<code>U+003E</code> aka <code>&gt;</code>)
+
+<li>
+A <a href="specification.html#whitespace character">whitespace character</a> such as ' ' or '\t'
+
+<li>
+All characters up until a <a href="specification.html#line ending">line ending</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+<span id="Specification-Language-Block Elements-Blockquote-Syntax-Extra Notes"></span><strong id="Extra Notes">Extra Notes</strong>: Each line of a blockquote, minus the indentation or chevron, is
+trimmed to remove all leading and trailing <a href="specification.html#whitespace character">whitespace characters</a>.
+</p>
+
+<div id="Specification-Language-Block Elements-Definition List"><h4 id="Definition List" class="header"><a href="#Specification-Language-Block Elements-Definition List">Definition List</a></h4></div>
+
+<p>
+A definition list is composed of a series of terms and associated definitions.
+It mirrors the functionality available in an <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl">HTML Description List</a>.
+</p>
+
+<pre vimwiki>
+Term 1:: Some definition
+Term 2:: First def
+:: Second def with [[link]]
+Term3::
+:: Some *bold* definition
+</pre>
+
+<div id="Specification-Language-Block Elements-Definition List-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-Definition List-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Block Elements-Definition List-Syntax-definition list"></span><strong id="definition list">definition list</strong> is composed of one or more <a href="specification.html#term and definitions">term and definitions</a>
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-Definition List-Syntax-term and definitions"></span><strong id="term and definitions">term and definitions</strong> is composed of one <a href="specification.html#term line">term line</a> and
+zero or more <a href="specification.html#definition line">definition lines</a>
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-Definition List-Syntax-term line"></span><strong id="term line">term line</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+One or more <a href="specification.html#inline elements">inline elements</a> (except <a href="specification.html#tags">tags</a>) before the sequence <code>::</code>
+
+<li>
+The sequence <code>::</code>
+
+<li>
+An optional one or more <a href="specification.html#inline elements">inline elements</a> before <a href="specification.html#line ending">line ending</a>
+   to be the first definition
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Definition List-Syntax-definition line"></span><strong id="definition line">definition line</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+The sequence <code>::</code>
+
+<li>
+One or more <a href="specification.html#inline elements">inline elements</a> before <a href="specification.html#line ending">line ending</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+<span id="Specification-Language-Block Elements-Definition List-Syntax-Extra Notes"></span><strong id="Extra Notes">Extra Notes</strong>: Each term and definition is trimmed to remove all leading and
+trailing <a href="specification.html#whitespace character">whitespace characters</a>.
+</p>
+
+<div id="Specification-Language-Block Elements-Divider"><h4 id="Divider" class="header"><a href="#Specification-Language-Block Elements-Divider">Divider</a></h4></div>
+
+<p>
+A divider is composed of a sequence of dashes (<code>U+002D</code>). It mirrors the
+functionality of the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr">HTML Horizontal Rule</a>.
+</p>
+
+<pre vimwiki>
+----
+</pre>
+
+<div id="Specification-Language-Block Elements-Divider-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-Divider-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Block Elements-Divider-Syntax-divider"></span><strong id="divider">divider</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Four or more dashes (<code>U+002D</code>)
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<div id="Specification-Language-Block Elements-Header"><h4 id="Header" class="header"><a href="#Specification-Language-Block Elements-Header">Header</a></h4></div>
+
+<p>
+A header is composed of some content surrounded by equals sign (<code>U+003D</code> aka
+<code>=</code>) of equal length. It mirrors the functionality of the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements">HTML Heading</a>.
+</p>
+
+<pre vimwiki>
+= Some Header =
+== Some Sub Header ==
+= *Bold* Header with [[link]] =
+</pre>
+
+<div id="Specification-Language-Block Elements-Header-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-Header-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Block Elements-Header-Syntax-header"></span><strong id="header">header</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a> (implying
+   whether or not a header is centered)
+
+<li>
+One or more equal sign (<code>U+003D</code>) characters
+
+<li>
+One or more <a href="specification.html#inline elements">inline elements</a>
+
+<li>
+An equivalent number of equal sign characters as in step #3
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+<span id="Specification-Language-Block Elements-Header-Syntax-Extra Notes"></span><strong id="Extra Notes">Extra Notes</strong>: Each header's content, minus the equals signs, is trimmed to
+remove all leading and trailing <a href="specification.html#whitespace character">whitespace characters</a>.
+For example, <code>= header =</code> is equal to <code>=header=</code>.
+</p>
+
+<div id="Specification-Language-Block Elements-List"><h4 id="List" class="header"><a href="#Specification-Language-Block Elements-List">List</a></h4></div>
+
+<p>
+A list is composed of a series list items, each being comprised
+of <a href="specification.html#inline elements">inline elements</a> and <a href="specification.html#list">sub lists</a>. It mirrors the
+functionality available in an <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul">HTML Unordered List</a>
+and <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol">HTML Ordered List</a>.
+</p>
+
+<pre vimwiki>
+- List item 1 has *bold* and [[links]]
+- List item 2 has content
+   1. Ordered sublist
+   2. within list item 2
+</pre>
+
+<div id="Specification-Language-Block Elements-List-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-List-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Block Elements-List-Syntax-list"></span><strong id="list">list</strong> is composed of one or more <a href="specification.html#list item">list items</a>.
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-List-Syntax-list item"></span><strong id="list item">list item</strong> is composed of a <a href="specification.html#starting list item line">starting list item line</a>
+and zero or more <a href="specification.html#companion list item line">companion list item lines</a>.
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-List-Syntax-starting list item line"></span><strong id="starting list item line">starting list item line</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a> that signify
+   the level of indentation to use when understanding if later content is
+   still associated with this list item, if a new list item is the beginning
+   of a sublist, if a new list item is a sibling, or if a new list item
+   is the sibling of a parent
+
+<li>
+One of the following default prefixes (this is also <a href="specification.html#user-definable">user definable</a>)
+   that determines the type of list item:
+
+<ul>
+<li>
+Hyphen (<code>U+002D</code> aka <code>-</code>) is for an unordered list
+
+<li>
+Asterisk (<code>U+002A</code> aka <code>*</code>) is for an unordered list
+
+<li>
+Pound (<code>U+0023</code> aka <code>#</code>) is for an ordered list
+
+<li>
+One or more digits followed by a period (<code>U+002E</code> aka <code>.</code>) or
+     a right parenthesis (<code>U+0029</code> aka <code>)</code>) is for an ordered list
+
+<li>
+One or more lowercase alphabetic (<code>a-z</code>) followed by a period
+     (<code>U+002E</code> aka <code>.</code>) or a right parenthesis (<code>U+0029</code> aka <code>)</code>) is for an
+     ordered list
+
+<li>
+One or more uppercase alphabetic (<code>A-Z</code>) followed by a period
+     (<code>U+002E</code> aka <code>.</code>) or a right parenthesis (<code>U+0029</code> aka <code>)</code>) is for an
+     ordered list
+
+<li>
+One or more lowercase Roman numerals (any of <code>ivxlcdm</code>) followed by a
+     period (<code>U+002E</code> aka <code>.</code>) or a right parenthesis (<code>U+0029</code> aka <code>)</code>) is
+     for an ordered list
+
+<li>
+One or more uppercase Roman numerals (any of  <code>IVXLCDM</code>) followed by a
+     period (<code>U+002E</code> aka <code>.</code>) or a right parenthesis (<code>U+0029</code> aka <code>)</code>) is
+     for an ordered list
+
+</ul>
+<li>
+A <a href="specification.html#whitespace character">whitespace character</a>
+
+<li>
+An optional <a href="specification.html#todo attribute">todo attribute</a> and additional <a href="specification.html#whitespace character">whitespace character</a>
+
+<li>
+Zero or more <a href="specification.html#inline elements">inline elements</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-List-Syntax-companion list item line"></span><strong id="companion list item line">companion list item line</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a> that total
+   as many or more as the <a href="specification.html#starting list item line">starting list item line</a> indentation
+
+<li>
+One of the following:
+
+<ul>
+<li>
+The start of a new <a href="specification.html#list">list</a> (to be treated as a sublist of the
+     current list item)
+
+<li>
+A series of one or more <a href="specification.html#inline elements">inline elements</a>
+     (to be added to the content of the current list item) followed by
+     a <a href="specification.html#line ending">line ending</a> or end of input
+
+<li>
+A <a href="specification.html#blank line">blank line</a> if there is guaranteed to still be some
+     list item content in later lines
+
+</ul>
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-List-Syntax-todo attribute"></span><strong id="todo attribute">todo attribute</strong> is composed of surrounding square brackets in the form
+of a left square bracket (<code>U+005B</code> aka <code>[</code>) and right square bracket
+(<code>U+005D</code> aka <code>]</code>). Inbetween the square brackets is a single character to
+denote the todo status and is by default one of the following or <a href="specification.html#user-definable">user-definable</a>:
+</p>
+<ul>
+<li>
+A space (<code>U+0020</code> aka ' ') meaning 0% or incomplete
+
+<li>
+A period (<code>U+002E</code> aka <code>.</code>) meaning 1-33% progress
+
+<li>
+A lowercase o (<code>U+006F</code> aka <code>o</code>) meaning 34-66% progress
+
+<li>
+An uppercase O (<code>U+004F</code> aka <code>O</code>) meaning 67-99% progress
+
+<li>
+An uppercase X (<code>U+0058</code> aka <code>X</code>) meaning 100% or completed
+
+<li>
+A hyphen (<code>U+002D</code> aka <code>-</code>) meaning rejected
+
+</ul>
+<p>
+<span id="Specification-Language-Block Elements-List-Syntax-Extra Notes"></span><strong id="Extra Notes">Extra Notes</strong>: Because of the ambiguity of alphabetic list items and Roman
+numerals, which are composed of specific alphabetic characters in various
+arrangements, a list needs to be evaluated across all of its items to determine
+if a list item's type is Roman or alphabetic. If all list items begin with
+valid Roman numerals, then the types are Roman numerals. If any list item is
+not a valid Roman numeral, then all list item type's for those prefixes are
+considered to be alphabetic.
+</p>
+
+<div id="Specification-Language-Block Elements-Math Block"><h4 id="Math Block" class="header"><a href="#Specification-Language-Block Elements-Math Block">Math Block</a></h4></div>
+
+<p>
+A math block is composed of a series of lines representing a mathematical
+formula. It is rendered in HTML using the <a href="https://www.mathjax.org/">MathJax engine</a>.
+</p>
+
+<pre vimwiki>
+{{$%align%
+\sum_i a_i^2 &amp;= 1 + 1 \\
+&amp;= 2.
+}}$
+</pre>
+
+<div id="Specification-Language-Block Elements-Math Block-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-Math Block-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Block Elements-Math Block-Syntax-math block"></span><strong id="math block">math block</strong> is composed of a <a href="specification.html#beginning math block line">beginning math block line</a>,
+one or more <a href="specification.html#math block line">math block lines</a>, and an <a href="specification.html#ending math block line">ending math block line</a>.
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-Math Block-Syntax-beginning math block line"></span><strong id="beginning math block line">beginning math block line</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+The sequence <code>{{$</code>
+
+<li>
+An optional <a href="specification.html#math environment">math environment</a>
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a>
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Math Block-Syntax-math environment"></span><strong id="math environment">math environment</strong> is represented by the following:
+</p>
+<ol>
+<li>
+The percent sign (<code>U+0025</code> aka <code>%</code>)
+
+<li>
+One or more <a href="specification.html#character">characters</a> that are not the percent sign or <a href="specification.html#line ending">line ending</a>
+
+<li>
+The percent sign (<code>U+0025</code> aka <code>%</code>)
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Math Block-Syntax-math block line"></span><strong id="math block line">math block line</strong> is a line found after a <a href="specification.html#beginning math block line">beginning math block line</a>
+and before an <a href="specification.html#ending math block line">ending math block line</a> and is
+comprised of zero or more <a href="specification.html#character">characters</a> representing <a href="https://en.wikipedia.org/wiki/TeX">TeX syntax</a>
+followed by a <a href="specification.html#line ending">line ending</a>.
+</p>
+
+<p>
+An <span id="Specification-Language-Block Elements-Math Block-Syntax-ending math block line"></span><strong id="ending math block line">ending math block line</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+The sequence <code>}}$</code>
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<div id="Specification-Language-Block Elements-Paragraph"><h4 id="Paragraph" class="header"><a href="#Specification-Language-Block Elements-Paragraph">Paragraph</a></h4></div>
+
+<p>
+A paragraph is composed of a series of lines representing some content. It
+mirrors <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p">HTML Paragraph</a>.
+</p>
+
+<pre vimwiki>
+Some paragraph containing
+multiple lines including
+*bold* and [[links]].
+</pre>
+
+<div id="Specification-Language-Block Elements-Paragraph-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-Paragraph-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Block Elements-Paragraph-Syntax-paragraph"></span><strong id="paragraph">paragraph</strong> is composed of one or more <a href="specification.html#paragraph line">paragraph lines</a>.
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-Paragraph-Syntax-paragraph line"></span><strong id="paragraph line">paragraph line</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Has zero to three <a href="specification.html#whitespace character">whitespace</a> characters for indentation
+
+<li>
+Is not any of the following:
+
+<ul>
+<li>
+<a href="specification.html#header">header</a>
+
+<li>
+<a href="specification.html#definition list">definition list</a>
+
+<li>
+<a href="specification.html#list">list</a>
+
+<li>
+<a href="specification.html#table">table</a>
+
+<li>
+<a href="specification.html#preformatted text">preformatted text</a>
+
+<li>
+<a href="specification.html#math block">math block</a>
+
+<li>
+<a href="specification.html#blank link">blank line</a>
+
+<li>
+<a href="specification.html#blockquote">blockquote</a>
+
+<li>
+<a href="specification.html#divider">divider</a>
+
+<li>
+<a href="specification.html#placeholder">placeholder</a>
+
+</ul>
+<li>
+One or more <a href="specification.html#inline elements">inline elements</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<div id="Specification-Language-Block Elements-Placeholder"><h4 id="Placeholder" class="header"><a href="#Specification-Language-Block Elements-Placeholder">Placeholder</a></h4></div>
+
+<p>
+A placeholder is composed of an identifier and some information. Its purpose
+is to provide metadata for use in rendering vimwiki to HTML and populating
+portions of the HTML template used with a vimwiki page.
+</p>
+
+<pre vimwiki>
+%title Some title
+%nohtml
+%template my_template
+%date 2020-12-23
+</pre>
+
+<div id="Specification-Language-Block Elements-Placeholder-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-Placeholder-Syntax">Syntax</a></h5></div>
+
+
+<p>
+A <span id="Specification-Language-Block Elements-Placeholder-Syntax-placeholder"></span><strong id="placeholder">placeholder</strong> is represented by one of the following:
+</p>
+<ul>
+<li>
+A <a href="specification.html#title placeholder">title placeholder</a>
+
+<li>
+A <a href="specification.html#nohtml placeholder">nohtml placeholder</a>
+
+<li>
+A <a href="specification.html#template placeholder">template placeholder</a>
+
+<li>
+A <a href="specification.html#date placeholder">date placeholder</a>
+
+</ul>
+<p>
+A <span id="Specification-Language-Block Elements-Placeholder-Syntax-title placeholder"></span><strong id="title placeholder">title placeholder</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+A percent sign (<code>U+0025</code> aka <code>%</code>)
+
+<li>
+The sequence <code>title</code>
+
+<li>
+One or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+<a href="specification.html#all characters until end of line">all characters until end of line</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Placeholder-Syntax-nohtml placeholder"></span><strong id="nohtml placeholder">nohtml placeholder</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+A percent sign (<code>U+0025</code> aka <code>%</code>)
+
+<li>
+The sequence <code>nohtml</code>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Placeholder-Syntax-template placeholder"></span><strong id="template placeholder">template placeholder</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+A percent sign (<code>U+0025</code> aka <code>%</code>)
+
+<li>
+The sequence <code>template</code>
+
+<li>
+One or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+<a href="specification.html#all characters until end of line">all characters until end of line</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Placeholder-Syntax-date placeholder"></span><strong id="date placeholder">date placeholder</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+A percent sign (<code>U+0025</code> aka <code>%</code>)
+
+<li>
+The sequence <code>date</code>
+
+<li>
+One or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+A date string in the format of <a href="https://en.wikipedia.org/wiki/ISO_8601">ISO 8601</a> such as
+   <code>YYYY-MM-DD</code> where <code>YYYY</code> symbolizes a four-digit year (e.g. <code>1990</code>),
+   <code>MM</code> symbolizes a two-digit month (e.g. <code>04</code>),
+   and <code>DD</code> symbolizes a two-digit day (e.g. <code>23</code>)
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<div id="Specification-Language-Block Elements-Preformatted Text"><h4 id="Preformatted Text" class="header"><a href="#Specification-Language-Block Elements-Preformatted Text">Preformatted Text</a></h4></div>
+
+<p>
+A preformatted text block is composed of a series of lines representing some
+content, usually related to a programming language. It mirrors
+<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre">HTML Preformatted Text</a>.
+</p>
+
+<pre vimwiki>
+{{{rust
+fn my_func() -&gt; u32 {
+    1 + 2
+}
+\}}}
+</pre>
+
+<div id="Specification-Language-Block Elements-Preformatted Text-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-Preformatted Text-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Block Elements-Preformatted Text-Syntax-preformatted text"></span><strong id="preformatted text">preformatted text</strong> is composed of a <a href="specification.html#beginning preformatted text line">beginning preformatted text line</a>,
+one or more <a href="specification.html#preformatted text line">preformatted text lines</a>, and an <a href="specification.html#ending preformatted text line">ending preformatted text line</a>.
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-Preformatted Text-Syntax-beginning preformatted text line"></span><strong id="beginning preformatted text line">beginning preformatted text line</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+The sequence <code>{{{</code>
+
+<li>
+An optional <a href="specification.html#preformatted language identifier">preformatted language identifier</a>
+
+<li>
+An optional <a href="specification.html#preformatted metadata list">preformatted metadata list</a>
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Preformatted Text-Syntax-preformatted language identifier"></span><strong id="preformatted language identifier">preformatted language identifier</strong> is represented by the following:
+</p>
+<ol>
+<li>
+One or more <a href="specification.html#character">characters</a> leading up to a <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+Is comprised of a series of any character except equals sign (<code>U+003D</code> aka <code>=</code>)
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Preformatted Text-Syntax-preformatted metadata list"></span><strong id="preformatted metadata list">preformatted metadata list</strong> is composed of one or more
+<a href="specification.html#preformatted metadata list items">preformatted metadata list items</a> separated by <a href="specification.html#whitespace character">whitespace characters</a>.
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-Preformatted Text-Syntax-preformatted metadata list item"></span><strong id="preformatted metadata list item">preformatted metadata list item</strong> is represented by the following:
+</p>
+<ol>
+<li>
+One or more <a href="specification.html#character">characters</a> leading up to an equals sign (<code>U+003D</code> aka <code>=</code>),
+   not including a <a href="specification.html#line ending">line ending</a>
+
+<li>
+An equals sign (<code>U+003D</code> aka <code>=</code>)
+
+<li>
+A quotation mark (<code>U+0022</code> aka <code>"</code>)
+
+<li>
+One or more <a href="specification.html#character">characters</a> leading up to a quotation mark (<code>U+0022</code> aka <code>"</code>)
+
+<li>
+A quotation mark (<code>U+0022</code> aka <code>"</code>)
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Preformatted Text-Syntax-preformatted text line"></span><strong id="preformatted text line">preformatted text line</strong> is a line found after a <a href="specification.html#beginning preformatted text line">beginning preformatted text line</a>
+and before an <a href="specification.html#ending preformatted text line">ending preformatted text line</a> and is
+comprised of zero or more <a href="specification.html#character">characters</a> followed by a <a href="specification.html#line ending">line ending</a>.
+</p>
+
+<p>
+An <span id="Specification-Language-Block Elements-Preformatted Text-Syntax-ending preformatted text line"></span><strong id="ending preformatted text line">ending preformatted text line</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+The sequence <code>}}}</code>
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<div id="Specification-Language-Block Elements-Table"><h4 id="Table" class="header"><a href="#Specification-Language-Block Elements-Table">Table</a></h4></div>
+
+<p>
+A table is composed of a series of rows containing various other elements. It
+mirrors <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table">HTML Table</a>.
+</p>
+
+<pre vimwiki>
+| Year | Temperature (low) |    Temperature (high)    | Temperature (avg) |
+|------|-------------------|:------------------------:|------------------:|
+| 1990 | *50* degrees      | 90 according to [[link]] |                72 |
+| \/   | 45 degrees        |            &gt;             |                80 |
+| \/   | \/                |            &gt;             |                60 |
+| 2000 | &gt;                 |            &gt;             |                 &gt; |
+</pre>
+
+<div id="Specification-Language-Block Elements-Table-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Block Elements-Table-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-table"></span><strong id="table">table</strong> is composed of one or more <a href="specification.html#row">rows</a> with the indentation of
+the first row indicating whether the table is centered (is indented) or not.
+</p>
+
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-row"></span><strong id="row">row</strong> is represented by one of the following:
+</p>
+<ul>
+<li>
+A <a href="specification.html#divider row">divider row</a>
+
+<li>
+A <a href="specification.html#content row">content row</a>
+
+</ul>
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-divider row"></span><strong id="divider row">divider row</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+A sequence of pairs comprised of a <a href="specification.html#cell boundary">cell boundary</a> and <a href="specification.html#divider column">divider column</a>
+
+<li>
+A final <a href="specification.html#cell boundary">cell boundary</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-divider column"></span><strong id="divider column">divider column</strong> is represented by the following:
+</p>
+<ol>
+<li>
+An optional colon (<code>U+003A</code> aka <code>:</code>)
+
+<li>
+One or more hyphens (<code>U+002D</code> aka <code>-</code>)
+
+<li>
+An optional colon (<code>U+003A</code> aka <code>:</code>)
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-content row"></span><strong id="content row">content row</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts at the beginning of a line
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+A sequence of pairs comprised of a <a href="specification.html#cell boundary">cell boundary</a> and a <a href="specification.html#cell">cell</a>
+
+<li>
+A final <a href="specification.html#cell boundary">cell boundary</a>
+
+<li>
+A <a href="specification.html#line ending">line ending</a> or end of input
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-cell"></span><strong id="cell">cell</strong> is represented by one of the following:
+</p>
+<ul>
+<li>
+A <a href="specification.html#span above cell">span above cell</a>
+
+<li>
+A <a href="specification.html#span left cell">span left cell</a>
+
+<li>
+A <a href="specification.html#content cell">content cell</a>
+
+</ul>
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-span above cell"></span><strong id="span above cell">span above cell</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+Sequence <code>\/</code>
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-span left cell"></span><strong id="span left cell">span left cell</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+Sequence <code>&gt;</code>
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-content cell"></span><strong id="content cell">content cell</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+<li>
+One or more <a href="specification.html#inline elements">inline elements</a> not comprised of <code>|</code>
+
+<li>
+Zero or more <a href="specification.html#whitespace character">whitespace characters</a>
+
+</ol>
+<p>
+A <span id="Specification-Language-Block Elements-Table-Syntax-cell boundary"></span><strong id="cell boundary">cell boundary</strong> is represented by the pipe character (<code>U+007C</code> aka <code>|</code>).
+</p>
+
+<div id="Specification-Language-Inline Elements"><h3 id="Inline Elements" class="header"><a href="#Specification-Language-Inline Elements">Inline Elements</a></h3></div>
+
+<p>
+The vimwiki language also has a variety of syntax that can be used within a
+line on a page. These are referred to as <span id="Specification-Language-Inline Elements-inline elements"></span><strong id="inline elements">inline elements</strong> and can be found
+within a variety of <a href="specification.html#block elements">block elements</a> as well as nested
+within other inline elements.
+</p>
+
+<div id="Specification-Language-Inline Elements-Math Inline"><h4 id="Math Inline" class="header"><a href="#Specification-Language-Inline Elements-Math Inline">Math Inline</a></h4></div>
+
+<p>
+A math inline element is composed of a single-line formula.
+Like its big brother, the <a href="specification.html#math block">math block</a>, it is rendered in HTML
+using the <a href="https://www.mathjax.org/">MathJax engine</a>.
+</p>
+
+<pre vimwiki>
+$ \sum_i a_i^2 = 1 $
+</pre>
+
+<div id="Specification-Language-Inline Elements-Math Inline-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Inline Elements-Math Inline-Syntax">Syntax</a></h5></div>
+
+<p>
+An <span id="Specification-Language-Inline Elements-Math Inline-Syntax-inline math"></span><strong id="inline math">inline math</strong> element is represented by the following:
+</p>
+<ol>
+<li>
+A dollar sign (<code>U+0024</code> aka <code>$</code>)
+
+<li>
+One or more <a href="specification.html#character">characters</a> representing <a href="https://en.wikipedia.org/wiki/TeX">TeX syntax</a>
+   that are not a dollar sign or <a href="specification.html#line ending">line ending</a>
+
+<li>
+A dollar sign (<code>U+0024</code> aka <code>$</code>)
+
+</ol>
+<p>
+<span id="Specification-Language-Inline Elements-Math Inline-Syntax-Extra Notes"></span><strong id="Extra Notes">Extra Notes</strong>: The formula within the inline element is trimmed to remove all
+leading and trailing <a href="specification.html#whitespace character">whitespace characters</a>.
+</p>
+
+<div id="Specification-Language-Inline Elements-Tags"><h4 id="Tags" class="header"><a href="#Specification-Language-Inline Elements-Tags">Tags</a></h4></div>
+
+<p>
+A tags element is composed of a series of individual tag elements. It is used
+both to mark various places within a page as well as act as an <a href="specification.html#anchor">anchor</a>.
+</p>
+
+<pre vimwiki>
+:tag-1:tag-2:
+</pre>
+
+<div id="Specification-Language-Inline Elements-Tags-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Inline Elements-Tags-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Tags-Syntax-tags"></span><strong id="tags">tags</strong> element is represented by the following:
+</p>
+<ol>
+<li>
+A <a href="specification.html#tag separator">tag separator</a>
+
+<li>
+A sequence of <a href="specification.html#tag">tag</a> separated by <a href="specification.html#tag separator">tag separator</a>
+
+<li>
+A <a href="specification.html#tag separator">tag separator</a>
+
+</ol>
+<p>
+A <span id="Specification-Language-Inline Elements-Tags-Syntax-tag"></span><strong id="tag">tag</strong> is represented by one or more <a href="specification.html#character">characters</a> that are not a colon,
+<a href="specification.html#whitespace character">whitespace</a>, or <a href="specification.html#line ending">line ending</a>
+</p>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Tags-Syntax-tag separator"></span><strong id="tag separator">tag separator</strong> is represented by a colon (<code>U+003A</code> aka <code>:</code>).
+</p>
+
+<div id="Specification-Language-Inline Elements-Link"><h4 id="Link" class="header"><a href="#Specification-Language-Inline Elements-Link">Link</a></h4></div>
+
+<p>
+A link is a crucial inline element of vimwiki and is able to connect pages
+with each other as well as external wikis and resources.
+</p>
+
+<pre vimwiki>
+[[other page|link to another page]]
+[[wiki1:page|link to page in another wiki]]
+[[#some#anchor|link to another location in same page]]
+[[diary:2020-12-23|link to diary entry]]
+{{https://example.com/img.jpg|Transclusion to pull in image}}
+[[https://example.com|{{https://example.com/img.jpg}}]]
+</pre>
+
+<div id="Specification-Language-Inline Elements-Link-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Inline Elements-Link-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link"></span><strong id="link">link</strong> is represented by one of the following:
+</p>
+<ul>
+<li>
+A <a href="specification.html#wiki link">wiki link</a>
+
+<li>
+An <a href="specification.html#interwiki link">interwiki link</a>
+
+<li>
+A <a href="specification.html#diary link">diary link</a>
+
+<li>
+An <a href="specification.html#external file link">external file link</a>
+
+<li>
+A <a href="specification.html#raw link">raw link</a>
+
+<li>
+A <a href="specification.html#transclusion link">transclusion link</a>
+
+</ul>
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-wiki link"></span><strong id="wiki link">wiki link</strong> is represented by the following:
+</p>
+<ol>
+<li>
+A <a href="specification.html#link start seq">link start seq</a>
+
+<li>
+At least one of the following (in order):
+
+<ol>
+<li>
+An optional <a href="specification.html#link path">link path</a>
+
+<li>
+An optional <a href="specification.html#link anchor">link anchor</a>
+
+</ol>
+<li>
+An optional <a href="specification.html#link inner separator">link inner separator</a> and <a href="specification.html#link description">link description</a>
+
+<li>
+A <a href="specification.html#link end seq">link end seq</a>
+
+</ol>
+<p>
+An <span id="Specification-Language-Inline Elements-Link-Syntax-interwiki link"></span><strong id="interwiki link">interwiki link</strong> is represented by one of the following:
+</p>
+<ul>
+<li>
+An <a href="specification.html#indexed interwiki link">indexed interwiki link</a>
+
+<li>
+An <a href="specification.html#named interwiki link">named interwiki link</a>
+
+</ul>
+<p>
+An <span id="Specification-Language-Inline Elements-Link-Syntax-indexed interwiki link"></span><strong id="indexed interwiki link">indexed interwiki link</strong> is represented by the following:
+</p>
+<ol>
+<li>
+A <a href="specification.html#link start seq">link start seq</a>
+
+<li>
+The sequence <code>wiki</code>
+
+<li>
+One or more digits (<code>0-9</code>)
+
+<li>
+A colon (<code>U+003A</code> aka <code>:</code>)
+
+<li>
+A <a href="specification.html#link path">link path</a>
+
+<li>
+An optional <a href="specification.html#link anchor">link anchor</a>
+
+<li>
+An optional <a href="specification.html#link inner separator">link inner separator</a> and <a href="specification.html#link description">link description</a>
+
+<li>
+A <a href="specification.html#link end seq">link end seq</a>
+
+</ol>
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-named interwiki link"></span><strong id="named interwiki link">named interwiki link</strong> is represented by the following:
+</p>
+<ol>
+<li>
+A <a href="specification.html#link start seq">link start seq</a>
+
+<li>
+The sequence <code>wn.</code>
+
+<li>
+One or more <a href="specification.html#alphanumeric character">alphanumeric characters</a>
+
+<li>
+A colon (<code>U+003A</code> aka <code>:</code>)
+
+<li>
+A <a href="specification.html#link path">link path</a>
+
+<li>
+An optional <a href="specification.html#link anchor">link anchor</a>
+
+<li>
+An optional <a href="specification.html#link inner separator">link inner separator</a> and <a href="specification.html#link description">link description</a>
+
+<li>
+A <a href="specification.html#link end seq">link end seq</a>
+
+</ol>
+<p>
+An <span id="Specification-Language-Inline Elements-Link-Syntax-external file link"></span><strong id="external file link">external file link</strong> is represented by the following:
+</p>
+<ol>
+<li>
+A <a href="specification.html#link start seq">link start seq</a>
+
+<li>
+A <a href="specification.html#link uri">link uri</a> whose schema is <code>local</code> or <code>file</code> or has no schema
+   and starts with <code>//</code> for an absolute file path
+
+<li>
+A <a href="specification.html#link path">link path</a>
+
+<li>
+An optional <a href="specification.html#link inner separator">link inner separator</a> and <a href="specification.html#link description">link description</a>
+
+<li>
+A <a href="specification.html#link end seq">link end seq</a>
+
+</ol>
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-raw link"></span><strong id="raw link">raw link</strong> is represented by a <a href="specification.html#link uri">link uri</a> not found within
+another link type.
+</p>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-transclusion link"></span><strong id="transclusion link">transclusion link</strong> is represented by the following:
+</p>
+<ol>
+<li>
+The sequence <code>{{</code>
+
+<li>
+A <a href="specification.html#link uri">link uri</a>
+
+<li>
+An optional <a href="specification.html#link inner separator">link inner separator</a> and <a href="specification.html#link description">link description</a>
+
+<li>
+An optional sequence of <a href="specification.html#link key value pair">link key value pairs</a>,
+   each separated by <a href="specification.html#link inner separator">link inner separator</a>
+
+<li>
+The sequence <code>}}</code>
+
+</ol>
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link key value pair"></span><strong id="link key value pair">link key value pair</strong> is represented by the following:
+</p>
+<ol>
+<li>
+One or more <a href="specification.html#character">characters</a> that are not a pipe symbol (<code>U+007C</code>
+   aka <code>|</code>), equals sign (<code>U+003D</code> aka <code>=</code>), <code>}}</code>, or <a href="specification.html#line ending">line ending</a>
+
+<li>
+An equals sign (<code>U+003D</code> aka <code>=</code>)
+
+<li>
+A quotation mark (<code>U+0022</code> aka <code>"</code>)
+
+<li>
+One or more <a href="specification.html#character">characters</a> that are not a pipe symbol (<code>U+007C</code>
+   aka <code>|</code>), quotation mark (<code>U+0022</code> aka <code>"</code>), <code>}}</code>, or <a href="specification.html#line ending">line ending</a>
+
+<li>
+A quotation mark (<code>U+0022</code> aka <code>"</code>)
+
+</ol>
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link path"></span><strong id="link path">link path</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Does not start with a <a href="specification.html#link anchor prefix">link anchor prefix</a>
+
+<li>
+One or more <a href="specification.html#character">characters</a> that are not a <a href="specification.html#link anchor prefix">link anchor prefix</a>,
+   <a href="specification.html#link inner separator">link inner separator</a>, <a href="specification.html#link end seq">link end seq</a>, or <a href="specification.html#line ending">line ending</a>
+
+</ol>
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link description"></span><strong id="link description">link description</strong> is represented by one of the following:
+</p>
+<ul>
+<li>
+A <a href="specification.html#link uri">link uri</a>
+
+<li>
+One or more <a href="specification.html#character">characters</a> that are not a <a href="specification.html#link end seq">link end seq</a> or <a href="specification.html#line ending">line ending</a>
+
+</ul>
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link anchor"></span><strong id="link anchor">link anchor</strong> is represented by a series of pairs, each comprised of
+a <a href="specification.html#link anchor prefix">link anchor prefix</a> and a <a href="specification.html#link anchor element">link anchor element</a>
+</p>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link anchor element"></span><strong id="link anchor element">link anchor element</strong> is represented by one or more <a href="specification.html#character">characters</a> that are
+not a <a href="specification.html#link anchor prefix">link anchor prefix</a>, <a href="specification.html#link inner separator">link inner separator</a>,
+<a href="specification.html#link end seq">link end seq</a>, or <a href="specification.html#line ending">line ending</a>
+</p>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link anchor prefix"></span><strong id="link anchor prefix">link anchor prefix</strong> is represented by a pound symbol (<code>U+0023</code> aka <code>#</code>).
+</p>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link inner separator"></span><strong id="link inner separator">link inner separator</strong> is represented by a pipe symbol (<code>U+007C</code> aka <code>|</code>).
+</p>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link start seq"></span><strong id="link start seq">link start seq</strong> is represented by <code>[[</code>.
+</p>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link end seq"></span><strong id="link end seq">link end seq</strong> is represented by <code>]]</code>.
+</p>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link uri"></span><strong id="link uri">link uri</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Starts with <code>www.</code>, <code>//</code>, or a <a href="specification.html#link uri scheme">link uri scheme</a>
+   a. If starting with <code>www.</code>, we add a virtual prefix of <code>https://</code> going forward
+   b. If starting with <code>//</code>, we add a virtual prefix of <code>file:/</code> going forward
+
+<li>
+One or more <a href="specification.html#character">characters</a> that are not <a href="specification.html#whitespace character">whitespace characters</a>
+   or <a href="specification.html#line ending">line ending</a>
+
+</ol>
+<p>
+A <span id="Specification-Language-Inline Elements-Link-Syntax-link uri scheme"></span><strong id="link uri scheme">link uri scheme</strong> is represented by a series of alphanumeric <a href="specification.html#character">characters</a>
+ (<code>a-z</code>, <code>A-Z</code>, <code>0-9</code>) as well as plus (<code>U+002B</code> aka <code>+</code>), period (<code>U+002E</code>
+ aka <code>.</code>), and hyphen (<code>U+002D</code> aka <code>-</code>). The scheme is terminated by a
+ colon (<code>U+003A</code> aka <code>:</code>).
+</p>
+
+<p>
+<span id="Specification-Language-Inline Elements-Link-Syntax-Extra Notes"></span><strong id="Extra Notes">Extra Notes</strong>: Additional validation should be done to ensure that a
+<a href="specification.html#line uri">link uri</a> properly adheres to <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>.
+</p>
+
+<div id="Specification-Language-Inline Elements-Decorated Text"><h4 id="Decorated Text" class="header"><a href="#Specification-Language-Inline Elements-Decorated Text">Decorated Text</a></h4></div>
+
+<p>
+Decorated text supports a variety of markups across <a href="specification.html#link">links</a>,
+<a href="specification.html#keyword">keywords</a>, non-repeating <a href="specification.html#decorated text">decorated text</a>, and <a href="specification.html#text">text</a>.
+</p>
+
+<p>
+It mirrors these different HTML elements:
+</p>
+<ul>
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/strong">strong</a>
+
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em">em</a>
+
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s">s</a>
+
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/code">code</a>
+
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sup">sup</a>
+
+<li>
+<a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sub">sub</a>
+<pre vimwiki>
+*bold*
+_italic_
+~~strikeout~~
+`code`
+^superscript^
+,,superscript,,
+</pre>
+
+</ul>
+<div id="Specification-Language-Inline Elements-Decorated Text-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Inline Elements-Decorated Text-Syntax">Syntax</a></h5></div>
+
+<p>
+<span id="Specification-Language-Inline Elements-Decorated Text-Syntax-Decorated text"></span><strong id="Decorated text">Decorated text</strong> is represented by one of the following:
+</p>
+<ul>
+<li>
+<a href="specification.html#bold text">Bold text</a>
+
+<li>
+<a href="specification.html#italic text">Italic text</a>
+
+<li>
+<a href="specification.html#strikeout text">Strikeout text</a>
+
+<li>
+<a href="specification.html#code text">Code text</a>
+
+<li>
+<a href="specification.html#superscript text">Superscript text</a>
+
+<li>
+<a href="specification.html#subscript text">Subscript text</a>
+
+</ul>
+<p>
+<span id="Specification-Language-Inline Elements-Decorated Text-Syntax-Bold text"></span><strong id="Bold text">Bold text</strong> is represented by the following:
+</p>
+<ol>
+<li>
+An asterisk (<code>U+002A</code> aka <code>*</code>)
+
+<li>
+One or more <a href="specification.html#link">links</a>, <a href="specification.html#keyword">keywords</a>, <a href="specification.html#non-repeated decorated text">non-repeated decorated text</a>, or <a href="specification.html#text">text</a> until
+   an asterisk (<code>U+002A</code> aka <code>*</code>) is encountered
+
+<li>
+An asterisk (<code>U+002A</code> aka <code>*</code>)
+
+</ol>
+<p>
+<span id="Specification-Language-Inline Elements-Decorated Text-Syntax-Italic text"></span><strong id="Italic text">Italic text</strong> is represented by the following:
+</p>
+<ol>
+<li>
+An underscore (<code>U+005F</code> aka <code>_</code>)
+
+<li>
+One or more <a href="specification.html#link">links</a>, <a href="specification.html#keyword">keywords</a>, <a href="specification.html#non-repeated decorated text">non-repeated decorated text</a>, or <a href="specification.html#text">text</a> until
+   an underscore (<code>U+005F</code> aka <code>_</code>) is encountered
+
+<li>
+An underscore (<code>U+005F</code> aka <code>_</code>)
+
+</ol>
+<p>
+<span id="Specification-Language-Inline Elements-Decorated Text-Syntax-Strikeout text"></span><strong id="Strikeout text">Strikeout text</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Two tilde (<code>U+007E</code> aka <code>~</code>)
+
+<li>
+One or more <a href="specification.html#link">links</a>, <a href="specification.html#keyword">keywords</a>, <a href="specification.html#non-repeated decorated text">non-repeated decorated text</a>, or <a href="specification.html#text">text</a> until
+   two tilde (<code>U+007E</code> aka <code>~</code>) are encountered
+
+<li>
+Two tilde (<code>U+007E</code> aka <code>~</code>)
+
+</ol>
+<p>
+<span id="Specification-Language-Inline Elements-Decorated Text-Syntax-Code text"></span><strong id="Code text">Code text</strong> is represented by the following:
+</p>
+<ol>
+<li>
+A backtick (<code>U+0060</code>)
+
+<li>
+Any character other than a backtick or <a href="specification.html#line ending">line ending</a>
+
+<li>
+A backtick (<code>U+0060</code>)
+
+</ol>
+<p>
+<span id="Specification-Language-Inline Elements-Decorated Text-Syntax-Superscript text"></span><strong id="Superscript text">Superscript text</strong> is represented by the following:
+</p>
+<ol>
+<li>
+A carrot or circumflex accent (<code>U+005E</code> aka <code>^</code>)
+
+<li>
+One or more <a href="specification.html#link">links</a>, <a href="specification.html#keyword">keywords</a>, <a href="specification.html#non-repeated decorated text">non-repeated decorated text</a>, or <a href="specification.html#text">text</a> until
+   a carrot or circumflex accent (<code>U+005E</code> aka <code>^</code>) is encountered
+
+<li>
+A carrot or circumflex accent (<code>U+005E</code> aka <code>^</code>)
+
+</ol>
+<p>
+<span id="Specification-Language-Inline Elements-Decorated Text-Syntax-Superscript text"></span><strong id="Superscript text">Superscript text</strong> is represented by the following:
+</p>
+<ol>
+<li>
+Two commas (<code>U+002C</code> aka <code>,</code>)
+
+<li>
+One or more <a href="specification.html#link">links</a>, <a href="specification.html#keyword">keywords</a>, <a href="specification.html#non-repeated decorated text">non-repeated decorated text</a>, or <a href="specification.html#text">text</a> until
+   two commas (<code>U+002C</code> aka <code>,</code>) are encountered
+
+<li>
+Two commas (<code>U+002C</code> aka <code>,</code>)
+
+</ol>
+<p>
+<span id="Specification-Language-Inline Elements-Decorated Text-Syntax-Non-repeated decorated text"></span><strong id="Non-repeated decorated text">Non-repeated decorated text</strong> is represented as <a href="specification.html#decorated text">decorated text</a>
+where no previous styling is seen again until that styling is closed. For
+example, if <a href="specification.html#bold text">bold text</a> is first seen, there will not be another
+case of bold text until after the current one has ended
+(<code>*bold *inner bold* text*</code> is not allowed).
+</p>
+
+<div id="Specification-Language-Inline Elements-Keyword"><h4 id="Keyword" class="header"><a href="#Specification-Language-Inline Elements-Keyword">Keyword</a></h4></div>
+
+<p>
+Keywords are specific, case-sensitive words that have an alternative
+highlighting within vim as well as provide highlighting in generated HTML
+via classes.
+</p>
+
+<div id="Specification-Language-Inline Elements-Keyword-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Inline Elements-Keyword-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Keyword-Syntax-keyword"></span><strong id="keyword">keyword</strong> is represented as one of the following:
+</p>
+<ul>
+<li>
+<code>DONE</code>
+
+<li>
+<code>FIXED</code>
+
+<li>
+<code>FIXME</code>
+
+<li>
+<code>STARTED</code>
+
+<li>
+<code>TODO</code>
+
+<li>
+<code>XXX</code>
+
+</ul>
+<div id="Specification-Language-Inline Elements-Text"><h4 id="Text" class="header"><a href="#Specification-Language-Inline Elements-Text">Text</a></h4></div>
+
+<p>
+Text is a plain series of <a href="specification.html#character">characters</a> that have no special stylings applied
+directly, but can be included in other <a href="specification.html#inline elements">inline elements</a>.
+</p>
+
+<div id="Specification-Language-Inline Elements-Text-Syntax"><h5 id="Syntax" class="header"><a href="#Specification-Language-Inline Elements-Text-Syntax">Syntax</a></h5></div>
+
+<p>
+A <span id="Specification-Language-Inline Elements-Text-Syntax-text"></span><strong id="text">text</strong> is represented as one or more <a href="specification.html#character">characters</a> until any of the following
+is encountered:
+</p>
+<ul>
+<li>
+<a href="specification.html#inline math">inline math</a>
+
+<li>
+<a href="specification.html#tags">tags</a>
+
+<li>
+<a href="specification.html#link">link</a>
+
+<li>
+<a href="specification.html#decorated text">decorated text</a>
+
+<li>
+<a href="specification.html#keyword">keyword</a>
+
+<li>
+<a href="specification.html#line ending">line ending</a>
+
+</ul>
+<div id="Specification-Language-Inline Elements-Comments"><h4 id="Comments" class="header"><a href="#Specification-Language-Inline Elements-Comments">Comments</a></h4></div>
+
+<p>
+A special type of inline element is the comment. Compared to all other inline
+elements, comments are unique in that they do not render into any other
+format (HTML, PDF, etc) and - in the case of multi-line comments - can span
+across more than one line.
+</p>
+
+<p>
+There are two types of comments:
+</p>
+
+<ol>
+<li>
+Line comment in the form of <code>%%CONTENT</code>
+
+<li>
+Multi-line comment in the form of `
+
+</ol>
+<p>
+`
+</p>
+<ol>
+<li>
+The sequence <code>+%%</code>
+
+</ol>
+<p>
+<span id="Specification-Language-Inline Elements-Comments-Extra Notes"></span><strong id="Extra Notes">Extra Notes</strong>: A multi-line comment consumes all <a href="specification.html#character">characters</a> - including
+<a href="specification.html#line ending">line ending</a> - between the surrounding character sequences. It
+can be used to join content in separate lines together. See example below.
+</p>
+
+<pre vimwiki>
+first line
+second line
+
+would become
+
+first linesecond line
+</pre>
+
+<div id="Specification-Parser Details"><h2 id="Parser Details" class="header"><a href="#Specification-Parser Details">Parser Details</a></h2></div>
+
+<p>
+When building a parser for the vimwiki language, certain elements may overlap
+in the text that they can match. This means that the order in which elements
+are evaluated can affect how a page is perceived.
+</p>
+
+<p>
+Additionally, the inclusion of <a href="specification.html#comments">comments</a> further complicates the
+process of parsing a file. Comments can be placed alongside inline elements,
+which enables them to be in most locations within vimwiki. Compared to any
+other element, comments yield empty text when rendered. This can result in
+shortening of lines and even removal of <a href="specification.html#line ending">line ending</a> characters.
+</p>
+
+<p>
+Below is a breakdown of element categorization:
+</p>
+
+<pre>
+Comment =
+Page = (Block Element)+
+Block Element =
+   | Header
+   | Definition List
+   | List
+   | Table
+   | Math Block
+   | Blockquote
+   | Divider
+   | Placeholder
+   | Paragraph
+Inline Block Element =
+   | List Item
+   | Term
+   | Definition
+Inline Element =
+   | Multi Line Comment
+   | Line Comment
+   | Math Inline
+   | Tags
+   | Link
+   | Decorated Text
+   | Keyword
+   | Text
+</pre>
+
+</div>
+</body>
+</html>
