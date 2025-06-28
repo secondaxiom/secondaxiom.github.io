@@ -22,6 +22,7 @@ h5 {font-size: 1.2em; color: #E041E0;}
 h6 {font-size: 1em; color: #E34F6A;}
 
 p, pre, blockquote, table, ul, ol, dl {
+  list-style-type: none;
   margin-top: 1em;
   margin-bottom: 1em;
   padding-top: 7px;
