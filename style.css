@@ -32,6 +32,7 @@ p, pre, blockquote, table, ul, ol, dl {
 }
 
 ul ul, ul ol, ol ol, ol ul {
+  list-style-type: none;
   margin-top: 0.5em;
   margin-bottom: 0.5em;
 }
