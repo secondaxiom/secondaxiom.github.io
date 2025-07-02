@@ -22,7 +22,6 @@ h5 {font-size: 1.2em; color: #E041E0;}
 h6 {font-size: 1em; color: #E34F6A;}
 
 p, pre, blockquote, table, ul, ol, dl {
-  list-style-type: none;
   margin-top: 1em;
   margin-bottom: 1em;
   padding-top: 7px;
@@ -33,15 +32,18 @@ p, pre, blockquote, table, ul, ol, dl {
 }
 
 ul ul, ul ol, ol ol, ol ul {
-  list-style-type: none;
   margin-top: 0.5em;
   margin-bottom: 0.5em;
 }
 
-li { margin: 0.3em auto; }
+li { 
+ margin: 0.3em auto;
+ margin-left: 2em;
+
+}
 
 ul {
-  margin-left: 2em;
+  margin-left: 1em;
   padding-left: 0;
 }
 
