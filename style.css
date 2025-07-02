@@ -3,7 +3,6 @@ body {
   margin: 2em 4em 2em 4em;
   font-size: 120%;
   line-height: 130%;
-  background-color: #3E3E3E;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -13,22 +12,16 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 0.5em;
 }
 
-h1 {font-size: 2em; color: #7DA9DB;}
-h2 {font-size: 1.8em; color: #D4AE48;}
-h2 {font-size: 1.8em; color: #7754DE;}
-h3 {font-size: 1.6em; color: #CF4892;}
-h4 {font-size: 1.4em; color: #4475F2;}
-h5 {font-size: 1.2em; color: #E041E0;}
-h6 {font-size: 1em; color: #E34F6A;}
+h1 {font-size: 2em; color: #000000;}
+h2 {font-size: 1.8em; color: #404040;}
+h3 {font-size: 1.6em; color: #707070;}
+h4 {font-size: 1.4em; color: #909090;}
+h5 {font-size: 1.2em; color: #989898;}
+h6 {font-size: 1em; color: #9c9c9c;}
 
 p, pre, blockquote, table, ul, ol, dl {
   margin-top: 1em;
   margin-bottom: 1em;
-  padding-top: 7px;
-  padding-bottom: 10px;
-  padding-left: 10px;
-  padding-right:10px;
-  font-size: 1em; color: #C0AEF5;
 }
 
 ul ul, ul ol, ol ol, ol ul {
@@ -36,14 +29,10 @@ ul ul, ul ol, ol ol, ol ul {
   margin-bottom: 0.5em;
 }
 
-li { 
- margin: 0.3em auto;
- margin-left: 2em;
-
-}
+li { margin: 0.3em auto; }
 
 ul {
-  margin-left: 1em;
+  margin-left: 2em;
   padding-left: 0;
 }
 
@@ -61,12 +50,12 @@ pre {
 }
 
 p > a {
-  color: #;
+  color: white;
   text-decoration: none;
   font-size: 0.7em;
   padding: 3px 6px;
   border-radius: 3px;
-  background-color: #223Ed8;
+  background-color: #1e90ff;
   text-transform: uppercase;
   font-weight: bold;
 }
@@ -77,12 +66,12 @@ p > a:hover {
 }
 
 li > a {
-  color: #F7CA4F;
+  color: #1e90ff;
   font-weight: bold;
   text-decoration: none;
 }
 
-li > a:hover { color: #DE83B5; }
+li > a:hover { color: #ff4500; }
 
 blockquote {
   color: #686868;
